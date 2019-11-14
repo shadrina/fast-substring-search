@@ -14,7 +14,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 
 public class Searcher {
-    private static int BUFFER_SIZE = 20000;
+    private static int BUFFER_SIZE = 500000;
 
     public static void searchByName(String folderPath, Algorithm algorithm) throws IOException {
         Files.walk(Paths.get(folderPath))
@@ -77,6 +77,7 @@ public class Searcher {
                         .findFirst()
                         .ifPresent(part -> System.out.println(path.getFileName().toString()));
                 globalPreviousPostfix = content.substring(contentLength - patternLength, contentLength);
+                bb.clear();
                 n = channel.read(bb);
             }
         }
