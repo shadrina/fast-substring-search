@@ -14,12 +14,17 @@ package ru.nsu.shadrina.algorithms;
  *  see <a href="https://algs4.cs.princeton.edu/53substring">Section 5.3</a> of
  *  <i>Algorithms, 4th Edition</i> by Robert Sedgewick and Kevin Wayne.
  */
-public class KMP {
+public class KMP implements Algorithm {
     private final int R;       // the radix
     private int[][] dfa;       // the KMP automoton
 
     private char[] pattern;    // either the character array for the pattern
     private String pat;        // or the pattern string
+
+    @Override
+    public String getPattern() {
+        return pat;
+    }
 
     /**
      * Preprocesses the pattern string.
@@ -74,6 +79,7 @@ public class KMP {
      * @return the index of the first occurrence of the pattern string
      *         in the text string; N if no such match
      */
+    @Override
     public int search(String txt) {
 
         // simulate operation of DFA on text
@@ -91,18 +97,19 @@ public class KMP {
      * Returns the index of the first occurrrence of the pattern string
      * in the text string.
      *
-     * @param  text the text string
+     * @param  txt the text string
      * @return the index of the first occurrence of the pattern string
      *         in the text string; N if no such match
      */
-    public int search(char[] text) {
+    @Override
+    public int search(char[] txt) {
 
         // simulate operation of DFA on text
         int m = pattern.length;
-        int n = text.length;
+        int n = txt.length;
         int i, j;
         for (i = 0, j = 0; i < n && j < m; i++) {
-            j = dfa[text[i]][j];
+            j = dfa[txt[i]][j];
         }
         if (j == m) return i - m;    // found
         return n;                    // not found

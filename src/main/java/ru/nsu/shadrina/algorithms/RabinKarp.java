@@ -13,13 +13,18 @@ import java.util.Random;
  *  see <a href="https://algs4.cs.princeton.edu/53substring">Section 5.3</a> of
  *  <i>Algorithms, 4th Edition</i> by Robert Sedgewick and Kevin Wayne.
  */
-public class RabinKarp {
+public class RabinKarp implements Algorithm {
     private String pat;      // the pattern  // needed only for Las Vegas
     private long patHash;    // pattern hash value
     private int m;           // pattern length
     private long q;          // a large prime, small enough to avoid long overflow
     private int R;           // radix
     private long RM;         // R^(M-1) % Q
+
+    @Override
+    public String getPattern() {
+        return pat;
+    }
 
     /**
      * Preprocesses the pattern string.
@@ -80,6 +85,7 @@ public class RabinKarp {
      * @return the index of the first occurrence of the pattern string
      *         in the text string; n if no such match
      */
+    @Override
     public int search(String txt) {
         int n = txt.length();
         if (n < m) return n;
@@ -105,6 +111,10 @@ public class RabinKarp {
         return n;
     }
 
+    @Override
+    public int search(char[] txt) {
+        return search(new String(txt));
+    }
 
     // a random 31-bit prime
     private static long longRandomPrime() {

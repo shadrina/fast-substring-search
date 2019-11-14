@@ -11,12 +11,17 @@ package ru.nsu.shadrina.algorithms;
  *  see <a href="https://algs4.cs.princeton.edu/53substring">Section 5.3</a> of
  *  <i>Algorithms, 4th Edition</i> by Robert Sedgewick and Kevin Wayne.
  */
-public class BoyerMoore {
+public class BoyerMoore implements Algorithm {
     private final int R;     // the radix
     private int[] right;     // the bad-character skip array
 
     private char[] pattern;  // store the pattern as a character array
     private String pat;      // or as a string
+
+    @Override
+    public String getPattern() {
+        return pat;
+    }
 
     /**
      * Preprocesses the pattern string.
@@ -63,6 +68,7 @@ public class BoyerMoore {
      * @return the index of the first occurrence of the pattern string
      *         in the text string; n if no such match
      */
+    @Override
     public int search(String txt) {
         int m = pat.length();
         int n = txt.length();
@@ -85,19 +91,20 @@ public class BoyerMoore {
      * Returns the index of the first occurrrence of the pattern string
      * in the text string.
      *
-     * @param  text the text string
+     * @param  txt the text string
      * @return the index of the first occurrence of the pattern string
      *         in the text string; n if no such match
      */
-    public int search(char[] text) {
+    @Override
+    public int search(char[] txt) {
         int m = pattern.length;
-        int n = text.length;
+        int n = txt.length;
         int skip;
         for (int i = 0; i <= n - m; i += skip) {
             skip = 0;
             for (int j = m-1; j >= 0; j--) {
-                if (pattern[j] != text[i+j]) {
-                    skip = Math.max(1, j - right[text[i+j]]);
+                if (pattern[j] != txt[i+j]) {
+                    skip = Math.max(1, j - right[txt[i+j]]);
                     break;
                 }
             }

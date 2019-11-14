@@ -1,20 +1,40 @@
 package ru.nsu.shadrina;
 
+import ru.nsu.shadrina.algorithms.Algorithm;
+import ru.nsu.shadrina.algorithms.BoyerMoore;
+import ru.nsu.shadrina.algorithms.KMP;
+import ru.nsu.shadrina.algorithms.RabinKarp;
 import ru.nsu.shadrina.search.Searcher;
+
+import java.io.IOException;
 
 
 public class Main {
     public static void main(String[] args) {
         check(args.length > 0, "You need to provide some arguments");
         var key = args[0];
-        if (key.equals("--name")) {
-            check(args.length == 3, "Wrong arguments count for searching by name");
-            Searcher.searchByName(args[1], args[2]);
-        } else if (key.equals("--data")) {
-            check(args.length == 3, "Wrong arguments count for searching by text");
-            Searcher.searchByText(formatString(args[1]), args[2]);
-        } else {
-            printHelp();
+        try {
+            if (key.equals("--name")) {
+                check(args.length == 3, "Wrong arguments count for searching by name");
+                var algorithm = initializeAlgorithm("rk", args[1]);
+                Searcher.searchByName(args[2], algorithm);
+            } else if (key.equals("--data")) {
+                check(args.length == 3, "Wrong arguments count for searching by text");
+                var algorithm = initializeAlgorithm("rk", formatString(args[1]));
+                Searcher.searchByText(args[2], algorithm);
+            } else {
+                printHelp();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static Algorithm initializeAlgorithm(String value, String pattern) {
+        switch (value) {
+            case "bm": return new BoyerMoore(pattern);
+            case "rk": return new RabinKarp(pattern);
+            default: return new KMP(pattern);
         }
     }
 
@@ -33,9 +53,9 @@ public class Main {
 
     private static void printHelp() {
         var help = "The following arguments are available:\n" +
-                "-h:                            Print help\n" +
-                "--name <name> <folder-path>:   Find files by name in the folder\n" +
-                "--data '<text>' <folder-path>: Find files by text in the folder";
+                "-h:                              Print help\n" +
+                "--name <name> <folder-path>:     Find files by name in the folder\n" +
+                "--data \"<text>\" <folder-path>: Find files by text in the folder";
         System.out.println(help);
     }
 }
