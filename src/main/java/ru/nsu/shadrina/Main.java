@@ -16,11 +16,11 @@ public class Main {
         try {
             if (key.equals("--name")) {
                 check(args.length == 3, "Wrong arguments count for searching by name");
-                var algorithm = initializeAlgorithm("rk", args[1]);
+                var algorithm = initializeAlgorithm("kmp", args[1]);
                 Searcher.searchByName(args[2], algorithm);
             } else if (key.equals("--data")) {
                 check(args.length == 3, "Wrong arguments count for searching by text");
-                var algorithm = initializeAlgorithm("rk", formatString(args[1]));
+                var algorithm = initializeAlgorithm("kmp", formatString(args[1]));
                 Searcher.searchByText(args[2], algorithm);
             } else {
                 printHelp();
