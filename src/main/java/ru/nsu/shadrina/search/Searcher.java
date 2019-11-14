@@ -4,11 +4,16 @@ import ru.nsu.shadrina.algorithms.Algorithm;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 
 public class Searcher {
+    private static int BUFFER_SIZE = 2000000000;
+
     public static void searchByName(String folderPath, Algorithm algorithm) throws IOException {
         Files.walk(Paths.get(folderPath))
                 .parallel()
@@ -22,65 +27,79 @@ public class Searcher {
 
     public static void searchByText(String folderPath, Algorithm algorithm) throws IOException {
         var fileOrDir = new File(folderPath);
+        var fileOrDirPath = Paths.get(folderPath);
         if (fileOrDir.isDirectory()) {
-            Files.walk(Paths.get(folderPath))
+            Files.walk(fileOrDirPath)
                     .parallel()
                     .unordered()
                     .forEach(path -> {
                         var file = new File(path.toString());
                         if (file.isFile()) {
                             try {
-                                searchByTextInFile(file, algorithm);
+                                searchByTextInFile(path, algorithm);
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
                         }
                     });
         } else {
-            searchByTextInFileParallel(fileOrDir, algorithm);
+            searchByTextInFileParallel(Paths.get(folderPath), algorithm);
         }
     }
 
-    private static void searchByTextInFileParallel(File file, Algorithm algorithm) throws IOException {
-        var content = new String(Files.readAllBytes(file.toPath()));
-        var contentLength = content.length();
-        var patternLength = algorithm.getPattern().length();
+    private static void searchByTextInFileParallel(Path path, Algorithm algorithm) throws IOException {
         var cores = Runtime.getRuntime().availableProcessors();
+        var patternLength = algorithm.getPattern().length();
 
-        var partLength = contentLength / cores;
-        if (partLength < patternLength) {
-            searchByTextInFile(file, algorithm);
-        } else {
-            var parts = new ArrayList<String>((contentLength + partLength - 1) / partLength);
-            var addStart = false;
-            var intermediatePart = new StringBuilder();
-            for (var start = 0; start < contentLength; start += partLength) {
-                var end = Math.min(contentLength, start + partLength);
-                parts.add(content.substring(start, end));
-                if (addStart) {
-                    intermediatePart.append(content, start, start + patternLength);
-                } else {
-                    intermediatePart.append(content, end - patternLength, end);
+        try (SeekableByteChannel channel = Files.newByteChannel(path)) {
+            var bb = ByteBuffer.allocateDirect(BUFFER_SIZE);
+            int n = channel.read(bb);
+            var content = "";
+            var globalPreviousPostfix = "";
+            while (n > 0) {
+                content = globalPreviousPostfix + bb.toString();
+                var contentLength = content.length();
+                var partLength = contentLength / cores;
+
+                var parts = new ArrayList<String>((contentLength + partLength - 1) / partLength);
+                var previousPostfix = "";
+                for (var start = 0; start < contentLength; start += partLength) {
+                    var end = Math.min(contentLength, start + partLength);
+                    parts.add(previousPostfix + content.substring(start, end));
+                    previousPostfix = content.substring(end - patternLength, end);
                 }
-                addStart = !addStart;
-                if (intermediatePart.length() == 2 * patternLength) {
-                    parts.add(intermediatePart.toString());
-                    intermediatePart.setLength(0);
-                }
+                parts.parallelStream()
+                        .unordered()
+                        .filter(part ->
+                                algorithm.search(part) != part.length()
+                        ).findFirst()
+                        .ifPresent(part -> System.out.println(path.getFileName().toString()));
+
+                globalPreviousPostfix = content.substring(contentLength - patternLength, contentLength);
+                n = channel.read(bb);
             }
-            parts.parallelStream()
-                    .unordered()
-                    .filter(part ->
-                            algorithm.search(part) != part.length()
-                    ).findFirst()
-                    .ifPresent(part -> System.out.println(file.getName()));
         }
+        System.out.println("Done");
     }
 
-    private static void searchByTextInFile(File file, Algorithm algorithm) throws IOException {
-        var content = new String(Files.readAllBytes(file.toPath()));
-        if (algorithm.search(content) != content.length()) {
-            System.out.println(file.getName());
+    private static void searchByTextInFile(Path path, Algorithm algorithm) throws IOException {
+        var patternLength = algorithm.getPattern().length();
+        try (SeekableByteChannel channel = Files.newByteChannel(path)) {
+            var bb = ByteBuffer.allocateDirect(BUFFER_SIZE);
+            int n = channel.read(bb);
+            var content = "";
+            var previousPostfix = "";
+            while (n > 0) {
+                content = previousPostfix + bb.toString();
+                var contentLength = content.length();
+                if (algorithm.search(content) != contentLength) {
+                    System.out.println(path.getFileName().toString());
+                }
+
+                previousPostfix = content.substring(contentLength - patternLength, contentLength);
+                n = channel.read(bb);
+            }
         }
+        System.out.println("Done");
     }
 }
